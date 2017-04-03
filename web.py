@@ -30,7 +30,6 @@ import http.server
 import json
 import http.client
 
-
 class OpenFDAClient():
 
     #URL
@@ -54,7 +53,6 @@ class OpenFDAClient():
         events=data1.decode('utf8')
         return events
 
-
 class OpenFDAParser():
 
     #GET LISTS
@@ -75,7 +73,6 @@ class OpenFDAParser():
         for event in events:
             lista=lista+[event['patient']['patientsex']]
         return lista
-
 
 class OpenFDAHTML():
 
@@ -264,7 +261,6 @@ class OpenFDAHTML():
         '''
         return html
 
-
 class OpenFDAError():
 
     #ERRORES
@@ -323,7 +319,6 @@ class OpenFDAError():
         '''
         return html
 
-
 class OpenFDAGender():
 
     #SUMATORIO DE GENERO
@@ -341,22 +336,20 @@ class OpenFDAGender():
                 contador=contador+1
         return contador
 
-
-# HTTPRequestHandler class
 class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     # GET
     def do_GET(self):
         client=OpenFDAClient()
         parser=OpenFDAParser()
-        html1=OpenFDAHTML()
+        HTML=OpenFDAHTML()
         error=OpenFDAError()
         gender1=OpenFDAGender()
         response = 200
 
         #Main page
         if self.path=='/':
-            html=html1.get_main_page()
+            html=HTML.get_main_page()
 
         #Second pages
         elif '/listDrugs' in self.path:
@@ -373,7 +366,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 events=json.loads(events_str)
                 events=events['results']
                 drugs=parser.get_drug_list(events)
-                html=html1.get_drug_html(drugs)
+                html=HTML.get_drug_html(drugs)
             else:
                 html=error.error_limit()
 
@@ -391,7 +384,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 events=json.loads(events_str)
                 events=events['results']
                 companies=parser.get_companynumb(events)
-                html=html1.get_company_html(companies)
+                html=HTML.get_company_html(companies)
             else:
                 html=error.error_limit()
 
@@ -405,7 +398,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 events=events['results']
                 companynumb=parser.get_companynumb(events)
-                html=html1.get_company_html(companynumb)
+                html=HTML.get_company_html(companynumb)
 
         elif '/searchCompany' in self.path:
             path=self.path.split('=')
@@ -420,7 +413,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 events=events['results']
                 drugs=parser.get_drug_list(events)
-                html=html1.get_drug_html(drugs)
+                html=HTML.get_drug_html(drugs)
 
         elif '/listGender' in self.path:
             limit=self.path.split('=')[1]
@@ -438,7 +431,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 gender=parser.get_patientsex(events)
                 males=gender1.male_gender(gender)
                 females=gender1.female_gender(gender)
-                html=html1.get_gender_html(gender,males,females)
+                html=HTML.get_gender_html(gender,males,females)
             else:
                 html=error.error_limit()
 
