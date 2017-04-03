@@ -344,7 +344,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         parser=OpenFDAParser()
         HTML=OpenFDAHTML()
         error=OpenFDAError()
-        gender1=OpenFDAGender()
+        GENDER=OpenFDAGender()
         response = 200
 
         #Main page
@@ -429,8 +429,8 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 events=json.loads(events_str)
                 events=events['results']
                 gender=parser.get_patientsex(events)
-                males=gender1.male_gender(gender)
-                females=gender1.female_gender(gender)
+                males=GENDER.male_gender(gender)
+                females=GENDER.female_gender(gender)
                 html=HTML.get_gender_html(gender,males,females)
             else:
                 html=error.error_limit()
