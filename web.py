@@ -8,6 +8,7 @@ class OpenFDAClient():
     OPENFDA_API_URL='api.fda.gov'
     OPENFDA_API_EVENT='/drug/event.json'
 
+
     #GET EVENTS
     def get_events(self,limit):
         conn=http.client.HTTPSConnection(self.OPENFDA_API_URL)
@@ -17,7 +18,15 @@ class OpenFDAClient():
         events=data1.decode('utf8')
         return events
 
-    def get_events_search(self,search):
+    def get_events_search(self,search,limit):
+        conn=http.client.HTTPSConnection(self.OPENFDA_API_URL)
+        conn.request('GET',self.OPENFDA_API_EVENT + '?search='+search+'&limit='+limit+'')
+        r1=conn.getresponse()
+        data1=r1.read()
+        events=data1.decode('utf8')
+        return events
+
+    def get_events_error(self,search):
         conn=http.client.HTTPSConnection(self.OPENFDA_API_URL)
         conn.request('GET',self.OPENFDA_API_EVENT + '?search='+search+'&limit=10')
         r1=conn.getresponse()
@@ -118,6 +127,7 @@ class OpenFDAHTML():
                     <tr>
                         <td>
                             <form method='get' action='searchDrug'>
+                                <input type='text' size='3' maxlength='2' name='limit'></input>
                                 <input type='submit' value='Drug Search: Send to OpendFDA'></input>
                                 <input type='text' name='drug'></input>
                                 <body align='left'>*</body>
@@ -136,6 +146,7 @@ class OpenFDAHTML():
                     <tr>
                         <td>
                             <form method='get' action='searchCompany'>
+                                <input type='text' size='3' maxlength='2' name='limit'></input>
                                 <input type='submit' value='Company Search: Send to OpendFDA'></input>
                                 <input type='text' name='company'></input>
                                 <body align='left'>*</body>
@@ -250,7 +261,7 @@ class OpenFDAError():
         '''
         return html
 
-    def error_search(self,events,busqueda):
+    def error_search(self,is_number,events_error,busqueda):
         html='''
         <html>
             <head>
@@ -260,7 +271,12 @@ class OpenFDAError():
                 <h1 align='left'>Error 404: Not Found</h1>
             </body>
         '''
-        if 'error' in events:
+        if not is_number:
+            html+='''
+                <body>· El campo del límite de eventos es erróneo. </body>
+                <body><br></body>
+            '''
+        if 'error' in events_error:
             html+='''
                 <body>· No existe el campo introducido. </body>
                 <body><br></body>
@@ -310,14 +326,14 @@ class OpenFDAGender():
 
 class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
-    # GET
     def do_GET(self):
+
         client=OpenFDAClient()
         parser=OpenFDAParser()
         HTML=OpenFDAHTML()
-        error=OpenFDAError()
+        ERROR=OpenFDAError()
         GENDER=OpenFDAGender()
-        response = 200
+        response=200
 
         #Main page
         if self.path=='/':
@@ -340,7 +356,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 drugs=parser.get_drug_list(events)
                 html=HTML.get_drug_html(drugs)
             else:
-                html=error.error_limit()
+                html=ERROR.error_limit()
 
         elif '/listCompanies' in self.path:
             limit=self.path.split('=')[1]
@@ -358,34 +374,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 companies=parser.get_companynumb(events)
                 html=HTML.get_company_html(companies)
             else:
-                html=error.error_limit()
-
-        elif '/searchDrug' in self.path:
-            path=self.path.split('=')
-            drug=path[1]
-            events_str=client.get_events_search(drug)
-            events=json.loads(events_str)
-            if 'error' in events or drug=='':
-                html=error.error_search(events,drug)
-            else:
-                events=events['results']
-                companynumb=parser.get_companynumb(events)
-                html=HTML.get_company_html(companynumb)
-
-        elif '/searchCompany' in self.path:
-            path=self.path.split('=')
-            company=path[1]
-
-            events_str=client.get_events_search(company)
-            events=json.loads(events_str)
-
-            if 'error' in events or company=='':
-                html=error.error_search(events,company)
-
-            else:
-                events=events['results']
-                drugs=parser.get_drug_list(events)
-                html=HTML.get_drug_html(drugs)
+                html=ERROR.error_limit()
 
         elif '/listGender' in self.path:
             limit=self.path.split('=')[1]
@@ -405,11 +394,82 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 females=GENDER.female_gender(gender)
                 html=HTML.get_gender_html(gender,males,females)
             else:
-                html=error.error_limit()
+                html=ERROR.error_limit()
+
+        elif '/searchDrug' in self.path:
+            iguales=self.path.count('=')
+            if iguales==2:
+                path=self.path.split('=')
+                drug=path[2]
+                with_number=path[1]
+                limit=with_number.split('&')[0]
+                if limit=='':
+                    limit='10'
+                is_number=True
+                try:
+                    int(limit)
+                except ValueError:
+                    is_number=False
+                events_str=client.get_events_search(drug,limit)
+                events=json.loads(events_str)
+                error=client.get_events_error(drug)
+                events_error=json.loads(error)
+                if 'error' in events_error or drug=='' or not is_number:
+                    html=ERROR.error_search(is_number,events_error,drug)
+                else:
+                    events=events['results']
+                    companynumb=parser.get_companynumb(events)
+                    html=HTML.get_company_html(companynumb)
+            elif iguales==1:
+                drug=self.path.split('=')[1]
+                events_str=client.get_events_error(drug)
+                events=json.loads(events_str)
+                events=events['results']
+                companynumb=parser.get_companynumb(events)
+                html=HTML.get_company_html(companynumb)
+            elif iguales==0:
+                html=ERROR.error_no_exist()
+
+        elif '/searchCompany' in self.path:
+            iguales=self.path.count('=')
+            if iguales==2:
+                path=self.path.split('=')
+                company=path[2]
+                with_number=path[1]
+                limit=with_number.split('&')[0]
+
+                if limit=='':
+                    limit='10'
+                is_number=True
+                try:
+                    int(limit)
+                except ValueError:
+                    is_number=False
+
+                events_str=client.get_events_search(company,limit)
+                events=json.loads(events_str)
+                error=client.get_events_error(company)
+                events_error=json.loads(error)
+
+                if 'error' in events_error or company=='' or not is_number:
+                    html=ERROR.error_search(is_number,events_error,company)
+                elif 'error' not in events_error or company!='' or is_number:
+                    events=events['results']
+                    drugs=parser.get_drug_list(events)
+                    html=HTML.get_drug_html(drugs)
+            elif iguales==1:
+                company=self.path.split('=')[1]
+                events_str=client.get_events_error(company)
+                events=json.loads(events_str)
+                events=events['results']
+                drugs=parser.get_drug_list(events)
+                html=HTML.get_drug_html(drugs)
+            elif iguales==0:
+                html=ERROR.error_no_exist()
 
         else:
-            response = 404
-            html=error.error_no_exist()
+            response=404
+            html=ERROR.error_no_exist()
 
         # Send response
         self.send_response(response)
