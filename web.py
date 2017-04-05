@@ -293,6 +293,20 @@ class OpenFDAError():
 
         return html
 
+    def error_test(self):
+        html='''
+        <html>
+            <head>
+            <title>OpenFDA Cool App</title>
+            </head>
+            <body>
+                <h1 align='left'>Error 404: Not Found</h1>
+            </body>
+            <body>· El medicamento introducido no existe. </body>
+        </html>
+        '''
+        return html
+
     def error_no_exist(self):
         html='''
         <html>
@@ -424,10 +438,13 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 drug=self.path.split('=')[1]
                 events_str=client.get_events_error(drug)
                 events=json.loads(events_str)
-                events=events['results']
-                companynumb=parser.get_companynumb(events)
-                html=HTML.get_company_html(companynumb)
-            elif iguales==0:
+                if 'error' in events:
+                    html=ERROR.error_test()
+                else:
+                    events=events['results']
+                    companynumb=parser.get_companynumb(events)
+                    html=HTML.get_company_html(companynumb)
+            else:
                 html=ERROR.error_no_exist()
 
         elif '/searchCompany' in self.path:
@@ -461,10 +478,13 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 company=self.path.split('=')[1]
                 events_str=client.get_events_error(company)
                 events=json.loads(events_str)
-                events=events['results']
-                drugs=parser.get_drug_list(events)
-                html=HTML.get_drug_html(drugs)
-            elif iguales==0:
+                if 'error' in events:
+                    html=ERROR.error_test()
+                else:
+                    events=events['results']
+                    drugs=parser.get_drug_list(events)
+                    html=HTML.get_drug_html(drugs)
+            else:
                 html=ERROR.error_no_exist()
 
         else:
