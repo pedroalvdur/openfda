@@ -3,6 +3,7 @@ import socketserver
 
 # WEB SERVER
 PORT = 8000
+socketserver.TCPServer.allow_reuse_adress=True
 Handler = web.testHTTPRequestHandler
 httpd = socketserver.TCPServer(("", PORT), Handler)
 print("serving at port", PORT)

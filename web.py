@@ -2,6 +2,54 @@ import http.server
 import json
 import http.client
 
+class OpenFDARedirect():
+
+    def redirect_list(self,limit,funcion):
+        html='''
+        <html>
+        <head>
+           <!-- HTML meta refresh URL redirection -->
+           <meta http-equiv="refresh"
+        '''
+        html+='content="0; url=http://212.128.254.41:8000/'+funcion+'?limit='+limit+'">'
+        html+='''
+        </head>
+        <body>
+            <h1>OpenFDA REDIRECTING</h1>
+            Será redirigido a la página que desea en unos segundos...
+        </body>
+        </html>
+        '''
+        return html
+
+    def redirect_search(self,limit,funcion,search):
+        html='''
+        <html>
+        <head>
+           <!-- HTML meta refresh URL redirection -->
+           <meta http-equiv="refresh"
+        '''
+        html+='content="0; url=http://212.128.254.41:8000/'+funcion+'?limit='+limit+'&'+search+'">'
+        html+='''
+        </head>
+        <body>
+            <h1>OpenFDA REDIRECTING</h1>
+            Será redirigido a la página que desea en unos segundos...
+        </body>
+        </html>
+        '''
+        return html
+
+    def similar_path(self,url,funcion):
+        inside=False
+        letras=0
+        for i in range(len(url)):
+            if url[i] in funcion:
+                letras+=1
+        if letras>=(len(funcion)-2):
+            inside=True
+        return inside
+
 class OpenFDAClient():
 
     #URL
@@ -110,7 +158,7 @@ class OpenFDAHTML():
                     <tr>
                         <td>
                             <form method='get' action='listGender'>
-                                <input type='text' size='3' maxlength='2' name='gender'></input>
+                                <input type='text' size='3' maxlength='2' name='limit'></input>
                                 <input type='submit' value='Gender Report: Send to OpenFDA'></input>
                             </form>
                         </td>
@@ -342,6 +390,7 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
 
+        redirect=OpenFDARedirect()
         client=OpenFDAClient()
         parser=OpenFDAParser()
         HTML=OpenFDAHTML()
@@ -488,8 +537,39 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                 html=ERROR.error_no_exist()
 
         else:
-            response=404
-            html=ERROR.error_no_exist()
+            url=self.path.split('?')[0]
+            funcion1='listDrugs'
+            funcion2='listCompanies'
+            funcion3='listGender'
+            funcion4='searchDrug'
+            funcion5='searchCompany'
+            if redirect.similar_path(url,funcion1):
+                limit=self.path.split('=')[1]
+                html=redirect.redirect_list(limit,funcion1)
+
+            elif redirect.similar_path(url,funcion2):
+                limit=self.path.split('=')[1]
+                html=redirect.redirect_list(limit,funcion2)
+
+            elif redirect.similar_path(url,funcion3):
+                limit=self.path.split('=')[1]
+                html=redirect.redirect_list(limit,funcion3)
+
+            elif redirect.similar_path(url,funcion4):
+                search=self.path.split('&')[1]
+                with_number=self.path.split('=')[1]
+                limit=with_number.split('&')[0]
+                html=redirect.redirect_search(limit,funcion4,search)
+
+            elif redirect.similar_path(url,funcion5):
+                search=self.path.split('&')[1]
+                with_number=self.path.split('=')[1]
+                limit=with_number.split('&')[0]
+                html=redirect.redirect_search(limit,funcion5,search)
+
+            else:
+                response=404
+                html=ERROR.error_no_exist()
 
         # Send response
         self.send_response(response)
