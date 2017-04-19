@@ -1,6 +1,7 @@
 import http.server
 import json
 import http.client
+from difflib import SequenceMatcher
 
 class OpenFDARedirect():
 
@@ -11,7 +12,7 @@ class OpenFDARedirect():
            <!-- HTML meta refresh URL redirection -->
            <meta http-equiv="refresh"
         '''
-        html+='content="0; url=http://212.128.254.41:8000/'+funcion+'?limit='+limit+'">'
+        html+='content="0; url=http://localhost:8000/'+funcion+'?limit='+limit+'">'
         html+='''
         </head>
         <body>
@@ -29,7 +30,7 @@ class OpenFDARedirect():
            <!-- HTML meta refresh URL redirection -->
            <meta http-equiv="refresh"
         '''
-        html+='content="0; url=http://212.128.254.41:8000/'+funcion+'?limit='+limit+'&'+search+'">'
+        html+='content="0; url=http://localhost:8000/'+funcion+'?limit='+limit+'&'+search+'">'
         html+='''
         </head>
         <body>
@@ -42,11 +43,8 @@ class OpenFDARedirect():
 
     def similar_path(self,url,funcion):
         inside=False
-        letras=0
-        for i in range(len(url)):
-            if url[i] in funcion:
-                letras+=1
-        if letras>=(len(funcion)-2):
+        similaridad=SequenceMatcher(None,url,funcion).ratio()
+        if similaridad>=0.75:
             inside=True
         return inside
 
@@ -397,6 +395,8 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         ERROR=OpenFDAError()
         GENDER=OpenFDAGender()
         response=200
+        header1='Content-type'
+        header2='text/html'
 
         #Main page
         if self.path=='/':
@@ -536,6 +536,16 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
             else:
                 html=ERROR.error_no_exist()
 
+        elif '/secret' in self.path:
+            response=401
+            header1='WWW-Authenticate'
+            header2='Basic realm="My Realm"'
+
+        elif '/redirect' in self.path:
+            response=302
+            header1='Location'
+            header2='http://localhost:8000/'
+
         else:
             url=self.path.split('?')[0]
             funcion1='listDrugs'
@@ -575,8 +585,8 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(response)
 
         # Send headers
-        self.send_header('Content-type','text/html')
+        self.send_header(header1,header2)
         self.end_headers()
 
-        #Send HTML
-        self.wfile.write(bytes(html, 'utf8'))
+        if response==200 or response==404:
+            self.wfile.write(bytes(html, 'utf8'))
