@@ -388,13 +388,18 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
 
+        #Clases:
         redirect=OpenFDARedirect()
         client=OpenFDAClient()
         parser=OpenFDAParser()
         HTML=OpenFDAHTML()
         ERROR=OpenFDAError()
         GENDER=OpenFDAGender()
+
+        #Response:
         response=200
+
+        #Cabecera:
         header1='Content-type'
         header2='text/html'
 
@@ -405,9 +410,10 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         #Second pages
         elif '/listDrugs' in self.path:
             limit=self.path.split('=')[1]
+            is_number=True
+
             if limit=='':
                 limit='10'
-            is_number=True
             try:
                 int(limit)
             except ValueError:
@@ -588,5 +594,6 @@ class testHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         self.send_header(header1,header2)
         self.end_headers()
 
+        #Send HTML:
         if response==200 or response==404:
             self.wfile.write(bytes(html, 'utf8'))
